@@ -28,6 +28,19 @@ pub fn LinkedList(comptime T: type) type {
                     justNext.prev = self;
                 }
             }
+
+            // unsets the next and prev for a node, links prev directly to next
+            pub fn unlink(self: *LinkedList(T).Node) void {
+                if (self.prev) |justPrev| {
+                    justPrev.next = self.next;
+                    self.prev = null;
+                }
+
+                if (self.next) |justNext| {
+                    justNext.prev = self.prev;
+                    self.next = null;
+                }
+            }
         };
 
         // add node to end
@@ -64,12 +77,7 @@ pub fn LinkedList(comptime T: type) type {
                 self.tail = null;
             } else {
                 // TODO ensure node is in the given list
-                var prev = elem.prev.?;
-                var next = elem.next.?;
-                prev.next = next;
-                next.prev = prev;
-                elem.next = null;
-                elem.prev = null;
+                elem.unlink();
             }
 
             self.len -= 1;

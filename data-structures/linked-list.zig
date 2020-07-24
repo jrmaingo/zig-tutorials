@@ -45,26 +45,12 @@ pub fn LinkedList(comptime T: type) type {
 
         // add node to end
         pub fn append(self: *LinkedList(T), elem: *Node) void {
-            elem.link(self.tail, null);
-
-            if (self.len == 0) {
-                assert(self.head == null);
-                self.head = elem;
-            }
-            self.tail = elem;
-            self.len += 1;
+            self.insertAt(elem, self.len);
         }
 
         // add node to front
         pub fn prepend(self: *LinkedList(T), elem: *Node) void {
-            elem.link(null, self.head);
-
-            if (self.len == 0) {
-                assert(self.tail == null);
-                self.tail = elem;
-            }
-            self.head = elem;
-            self.len += 1;
+            self.insertAt(elem, 0);
         }
 
         // removes node from list
@@ -91,6 +77,13 @@ pub fn LinkedList(comptime T: type) type {
             if (self.len <= index) {
                 // TODO exception instead
                 return null;
+            }
+
+            // small optimization
+            if (index == 0) {
+                return self.head;
+            } else if (index == self.len - 1) {
+                return self.tail;
             }
 
             // TODO iterate in reverse if near the end
@@ -122,16 +115,27 @@ pub fn LinkedList(comptime T: type) type {
             assert(self.len >= index);
 
             if (index == 0) {
-                self.prepend(elem);
-            } else if (index == self.len) {
-                self.append(elem);
+                self.head = elem;
             } else {
                 var prev = self.nodeAt(index - 1).?;
-                var next = prev.next.?;
-
-                elem.link(prev, next);
-                self.len += 1;
+                elem.link(prev, prev.next);
             }
+
+            if (index == self.len) {
+                self.tail = elem;
+            }
+
+            self.len += 1;
+        }
+
+        // remove the node at the end of the list
+        pub fn removeLast(self: *LinkedList(T)) *Node {
+            return removeAt(self.len - 1);
+        }
+
+        // remove the node at the front of the list
+        pub fn removeFirst(self: *LinkedList(T)) *Node {
+            return removeAt(0);
         }
 
         head: ?*Node = null,

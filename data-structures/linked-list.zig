@@ -6,19 +6,36 @@ pub fn LinkedList(comptime T: type) type {
             prev: ?*Node = null,
             next: ?*Node = null,
             value: T,
+
+            // sets next and prev for a node
+            pub fn link(self: *LinkedList(T).Node, prev: ?*LinkedList(T).Node, next: ?*LinkedList(T).Node) void {
+                // TODO error handling
+                assert(self.prev == null);
+                assert(self.next == null);
+
+                self.prev = prev;
+                self.next = next;
+
+                if (prev) |justPrev| {
+                    // TODO exception instead
+                    assert(justPrev.next == next);
+                    justPrev.next = self;
+                }
+
+                if (next) |justNext| {
+                    // TODO exception instead
+                    assert(justNext.prev == prev);
+                    justNext.prev = self;
+                }
+            }
         };
 
         // add node to end
         pub fn append(self: *LinkedList(T), elem: *Node) void {
-            // TODO error handling
-            assert(elem.prev == null);
-            assert(elem.next == null);
+            elem.link(self.tail, null);
 
-            var maybe_old_tail = self.tail;
-            elem.prev = maybe_old_tail;
-            if (maybe_old_tail) |old_tail| {
-                old_tail.next = elem;
-            } else {
+            if (self.len == 0) {
+                assert(self.head == null);
                 self.head = elem;
             }
             self.tail = elem;
@@ -70,6 +87,7 @@ pub fn LinkedList(comptime T: type) type {
                 return null;
             }
 
+            // TODO iterate in reverse if near the end
             var curr_index: usize = 0;
             var curr_node = self.head.?;
             return while (curr_index < self.len) : ({
@@ -85,8 +103,28 @@ pub fn LinkedList(comptime T: type) type {
         // TODO
         pub fn removeAt(self: *LinkedList(T), index: usize) Node {}
 
-        // TODO
-        pub fn insert(self: *LinkedList(T), elem: Node, index: usize) void {}
+        // insert a node at the given index
+        pub fn insertAt(self: *LinkedList(T), elem: *Node, index: usize) void {
+            // TODO exception instead
+            assert(self.len >= index);
+
+            if (index == 0) {
+                self.prepend(elem);
+            } else if (index == self.len) {
+                self.append(elem);
+            } else {
+                var prev = self.nodeAt(index - 1).?;
+                var next = prev.next.?;
+
+                elem.prev = prev;
+                elem.next = next;
+
+                prev.next = elem;
+                next.prev = elem;
+
+                self.len += 1;
+            }
+        }
 
         head: ?*Node = null,
         tail: ?*Node = null,
@@ -183,4 +221,25 @@ test "get node at index" {
     assert(int_list.nodeAt(1) == &node2);
     assert(int_list.nodeAt(2) == &node3);
     assert(int_list.nodeAt(3) == null);
+}
+
+test "insert node at index" {
+    var int_list = LinkedList(i32){};
+    var node1 = LinkedList(i32).Node{
+        .value = 1,
+    };
+    var node2 = LinkedList(i32).Node{
+        .value = 2,
+    };
+    var node3 = LinkedList(i32).Node{
+        .value = 3,
+    };
+
+    int_list.insertAt(&node1, 0);
+    int_list.insertAt(&node2, 1);
+    int_list.insertAt(&node3, 1);
+
+    assert(int_list.nodeAt(0) == &node1);
+    assert(int_list.nodeAt(1) == &node3);
+    assert(int_list.nodeAt(2) == &node2);
 }

@@ -69,16 +69,19 @@ pub fn LinkedList(comptime T: type) type {
 
         // removes node from list
         pub fn remove(self: *LinkedList(T), elem: *Node) void {
+            // TODO exception instead
             assert(self.len > 0);
 
-            if (self.len == 1) {
-                assert(self.head == elem);
-                self.head = null;
-                self.tail = null;
-            } else {
-                // TODO ensure node is in the given list
-                elem.unlink();
+            if (self.head == elem) {
+                self.head = elem.next;
             }
+
+            if (self.tail == elem) {
+                self.tail = elem.prev;
+            }
+
+            // TODO ensure node is in the given list
+            elem.unlink();
 
             self.len -= 1;
         }
@@ -197,6 +200,16 @@ test "remove from linked list" {
     assert(int_list.len == 2);
     assert(int_list.head == &node1);
     assert(int_list.tail == &node3);
+
+    int_list.remove(&node1);
+    assert(int_list.len == 1);
+    assert(int_list.head == &node3);
+    assert(int_list.tail == &node3);
+
+    int_list.remove(&node3);
+    assert(int_list.len == 0);
+    assert(int_list.head == null);
+    assert(int_list.tail == null);
 }
 
 test "get node at index" {

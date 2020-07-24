@@ -44,15 +44,10 @@ pub fn LinkedList(comptime T: type) type {
 
         // add node to front
         pub fn prepend(self: *LinkedList(T), elem: *Node) void {
-            // TODO error handling
-            assert(elem.prev == null);
-            assert(elem.next == null);
+            elem.link(null, self.head);
 
-            var maybe_old_head = self.head;
-            elem.next = maybe_old_head;
-            if (maybe_old_head) |old_head| {
-                old_head.prev = elem;
-            } else {
+            if (self.len == 0) {
+                assert(self.tail == null);
                 self.tail = elem;
             }
             self.head = elem;
@@ -116,12 +111,7 @@ pub fn LinkedList(comptime T: type) type {
                 var prev = self.nodeAt(index - 1).?;
                 var next = prev.next.?;
 
-                elem.prev = prev;
-                elem.next = next;
-
-                prev.next = elem;
-                next.prev = elem;
-
+                elem.link(prev, next);
                 self.len += 1;
             }
         }

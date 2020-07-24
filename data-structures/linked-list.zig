@@ -106,8 +106,15 @@ pub fn LinkedList(comptime T: type) type {
             } else null;
         }
 
-        // TODO
-        pub fn removeAt(self: *LinkedList(T), index: usize) Node {}
+        // removes the node at the given index and returns it
+        pub fn removeAt(self: *LinkedList(T), index: usize) *Node {
+            // TODO exception instead
+            assert(self.len > index);
+
+            var elem = self.nodeAt(index).?;
+            self.remove(elem);
+            return elem;
+        }
 
         // insert a node at the given index
         pub fn insertAt(self: *LinkedList(T), elem: *Node, index: usize) void {
@@ -253,4 +260,27 @@ test "insert node at index" {
     assert(int_list.nodeAt(0) == &node1);
     assert(int_list.nodeAt(1) == &node3);
     assert(int_list.nodeAt(2) == &node2);
+}
+
+test "remove from index in linked list" {
+    var int_list = LinkedList(i32){};
+    var node1 = LinkedList(i32).Node{
+        .value = 1,
+    };
+    var node2 = LinkedList(i32).Node{
+        .value = 2,
+    };
+    var node3 = LinkedList(i32).Node{
+        .value = 3,
+    };
+
+    int_list.append(&node1);
+    int_list.append(&node2);
+    int_list.append(&node3);
+
+    const elem = int_list.removeAt(1);
+    assert(int_list.len == 2);
+    assert(int_list.head == &node1);
+    assert(int_list.tail == &node3);
+    assert(elem == &node2);
 }

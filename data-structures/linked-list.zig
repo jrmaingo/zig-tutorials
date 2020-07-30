@@ -81,17 +81,16 @@ pub fn LinkedList(comptime T: type) type {
         }
 
         // get the node at the given index
-        pub fn nodeAt(self: *LinkedList(T), index: usize) ?*Node {
+        pub fn nodeAt(self: *LinkedList(T), index: usize) !*Node {
             if (self.len <= index) {
-                // TODO exception instead
-                return null;
+                return error.OutOfRange;
             }
 
             // small optimization
             if (index == 0) {
-                return self.head;
+                return self.head.?;
             } else if (index == self.len - 1) {
-                return self.tail;
+                return self.tail.?;
             }
 
             // TODO iterate in reverse if near the end
@@ -104,7 +103,7 @@ pub fn LinkedList(comptime T: type) type {
                 if (curr_index == index) {
                     break curr_node;
                 }
-            } else null;
+            } else unreachable; // already checked range above
         }
 
         // removes the node at the given index and returns it
@@ -113,7 +112,7 @@ pub fn LinkedList(comptime T: type) type {
                 return error.OutOfRange;
             }
 
-            var elem = self.nodeAt(index).?;
+            var elem = try self.nodeAt(index);
             try self.remove(elem);
             return elem;
         }
@@ -128,7 +127,7 @@ pub fn LinkedList(comptime T: type) type {
                 try elem.link(null, self.head);
                 self.head = elem;
             } else {
-                var prev = self.nodeAt(index - 1).?;
+                var prev = try self.nodeAt(index - 1);
                 try elem.link(prev, prev.next);
             }
 
@@ -252,10 +251,14 @@ test "get node at index" {
     try int_list.append(&node2);
     try int_list.append(&node3);
 
-    assert(int_list.nodeAt(0) == &node1);
-    assert(int_list.nodeAt(1) == &node2);
-    assert(int_list.nodeAt(2) == &node3);
-    assert(int_list.nodeAt(3) == null);
+    assert((try int_list.nodeAt(0)) == &node1);
+    assert((try int_list.nodeAt(1)) == &node2);
+    assert((try int_list.nodeAt(2)) == &node3);
+    if (int_list.nodeAt(3)) |_| {
+        unreachable;
+    } else |err| {
+        assert(err == error.OutOfRange);
+    }
 }
 
 test "insert node at index" {
@@ -274,9 +277,9 @@ test "insert node at index" {
     try int_list.insertAt(&node2, 1);
     try int_list.insertAt(&node3, 1);
 
-    assert(int_list.nodeAt(0) == &node1);
-    assert(int_list.nodeAt(1) == &node3);
-    assert(int_list.nodeAt(2) == &node2);
+    assert((try int_list.nodeAt(0)) == &node1);
+    assert((try int_list.nodeAt(1)) == &node3);
+    assert((try int_list.nodeAt(2)) == &node2);
 }
 
 test "remove from index in linked list" {

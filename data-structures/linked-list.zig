@@ -11,6 +11,7 @@ pub fn LinkedList(comptime T: type) type {
 
             // sets next and prev for a node
             pub fn link(self: *LinkedList(T).Node, prev: ?*LinkedList(T).Node, next: ?*LinkedList(T).Node) !void {
+                // TODO use transactions so no changes are made when an error occurs
                 if (self.prev != null or self.prev != null) {
                     return error.LinkingError;
                 }
@@ -19,14 +20,16 @@ pub fn LinkedList(comptime T: type) type {
                 self.next = next;
 
                 if (prev) |justPrev| {
-                    // TODO exception instead
-                    assert(justPrev.next == next);
+                    if (justPrev.next != next) {
+                        return error.LinkingError;
+                    }
                     justPrev.next = self;
                 }
 
                 if (next) |justNext| {
-                    // TODO exception instead
-                    assert(justNext.prev == prev);
+                    if (justNext.prev != prev) {
+                        return error.LinkingError;
+                    }
                     justNext.prev = self;
                 }
             }
@@ -45,6 +48,8 @@ pub fn LinkedList(comptime T: type) type {
             }
         };
 
+        const LinkedListError = error{OutOfRange};
+
         // add node to end
         pub fn append(self: *LinkedList(T), elem: *Node) !void {
             try self.insertAt(elem, self.len);
@@ -56,9 +61,10 @@ pub fn LinkedList(comptime T: type) type {
         }
 
         // removes node from list
-        pub fn remove(self: *LinkedList(T), elem: *Node) void {
-            // TODO exception instead
-            assert(self.len > 0);
+        pub fn remove(self: *LinkedList(T), elem: *Node) !void {
+            if (self.len <= 0) {
+                return error.OutOfRange;
+            }
 
             if (self.head == elem) {
                 self.head = elem.next;
@@ -102,19 +108,21 @@ pub fn LinkedList(comptime T: type) type {
         }
 
         // removes the node at the given index and returns it
-        pub fn removeAt(self: *LinkedList(T), index: usize) *Node {
-            // TODO exception instead
-            assert(self.len > index);
+        pub fn removeAt(self: *LinkedList(T), index: usize) !*Node {
+            if (self.len <= index) {
+                return error.OutOfRange;
+            }
 
             var elem = self.nodeAt(index).?;
-            self.remove(elem);
+            try self.remove(elem);
             return elem;
         }
 
         // insert a node at the given index
         pub fn insertAt(self: *LinkedList(T), elem: *Node, index: usize) !void {
-            // TODO exception instead
-            assert(self.len >= index);
+            if (self.len < index) {
+                return error.OutOfRange;
+            }
 
             if (index == 0) {
                 try elem.link(null, self.head);
@@ -212,17 +220,17 @@ test "remove from linked list" {
     try int_list.append(&node2);
     try int_list.append(&node3);
 
-    int_list.remove(&node2);
+    try int_list.remove(&node2);
     assert(int_list.len == 2);
     assert(int_list.head == &node1);
     assert(int_list.tail == &node3);
 
-    int_list.remove(&node1);
+    try int_list.remove(&node1);
     assert(int_list.len == 1);
     assert(int_list.head == &node3);
     assert(int_list.tail == &node3);
 
-    int_list.remove(&node3);
+    try int_list.remove(&node3);
     assert(int_list.len == 0);
     assert(int_list.head == null);
     assert(int_list.tail == null);
@@ -287,7 +295,7 @@ test "remove from index in linked list" {
     try int_list.append(&node2);
     try int_list.append(&node3);
 
-    const elem = int_list.removeAt(1);
+    const elem = try int_list.removeAt(1);
     assert(int_list.len == 2);
     assert(int_list.head == &node1);
     assert(int_list.tail == &node3);

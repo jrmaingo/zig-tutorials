@@ -115,6 +115,7 @@ pub fn LinkedList(comptime T: type) type {
             assert(self.len >= index);
 
             if (index == 0) {
+                elem.link(null, self.head);
                 self.head = elem;
             } else {
                 var prev = self.nodeAt(index - 1).?;
@@ -169,6 +170,7 @@ test "append to linked list" {
     assert(int_list.len == 2);
     assert(int_list.head == &node1);
     assert(int_list.tail == &node2);
+    assert(int_list.tail.?.prev == &node1);
 }
 
 test "prepend to linked list" {
@@ -189,6 +191,7 @@ test "prepend to linked list" {
     assert(int_list.len == 2);
     assert(int_list.head == &node2);
     assert(int_list.tail == &node1);
+    assert(int_list.head.?.next == &node1);
 }
 
 test "remove from linked list" {

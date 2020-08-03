@@ -11,27 +11,42 @@ pub fn LinkedList(comptime T: type) type {
 
             // sets next and prev for a node
             pub fn link(self: *LinkedList(T).Node, prev: ?*LinkedList(T).Node, next: ?*LinkedList(T).Node) !void {
-                // TODO use transactions so no changes are made when an error occurs
                 if (self.prev != null or self.prev != null) {
                     return error.LinkingError;
                 }
 
+                const origPrev = self.prev;
+                const origNext = self.next;
                 self.prev = prev;
                 self.next = next;
+                errdefer {
+                    self.prev = origPrev;
+                    self.next = origNext;
+                }
 
+                var origPrevNext: ?*Node = null;
                 if (prev) |justPrev| {
                     if (justPrev.next != next) {
                         return error.LinkingError;
                     }
+                    origPrevNext = justPrev.next;
                     justPrev.next = self;
                 }
+                errdefer if (prev) |justPrev| {
+                    justPrev.next = origPrevNext;
+                };
 
+                var origNextPrev: ?*Node = null;
                 if (next) |justNext| {
                     if (justNext.prev != prev) {
                         return error.LinkingError;
                     }
+                    origNextPrev = justNext.prev;
                     justNext.prev = self;
                 }
+                errdefer if (next) |justNext| {
+                    justNext.prev = origNextPrev;
+                };
             }
 
             // unsets the next and prev for a node, links prev directly to next
@@ -303,4 +318,30 @@ test "remove from index in linked list" {
     assert(int_list.head == &node1);
     assert(int_list.tail == &node3);
     assert(elem == &node2);
+}
+
+test "link disconnected nodes" {
+    var int_list = LinkedList(i32){};
+    var node1 = LinkedList(i32).Node{
+        .value = 1,
+    };
+    var node2 = LinkedList(i32).Node{
+        .value = 2,
+    };
+    var node3 = LinkedList(i32).Node{
+        .value = 3,
+    };
+
+    if (node1.link(&node2, &node3)) {
+        unreachable;
+    } else |err| {
+        // ensure node changes were made
+        assert(err == error.LinkingError);
+        assert(node1.prev == null);
+        assert(node1.next == null);
+        assert(node2.prev == null);
+        assert(node2.next == null);
+        assert(node3.prev == null);
+        assert(node3.next == null);
+    }
 }
